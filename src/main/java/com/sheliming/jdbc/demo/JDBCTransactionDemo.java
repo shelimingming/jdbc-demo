@@ -3,12 +3,12 @@ package com.sheliming.jdbc.demo;
 import java.sql.*;
 
 /**
- * jdbc使用demo
+ * jdbc实现事务的demo
  */
-public class JDBCDemo {
-    public static void main(String[] args) {
+public class JDBCTransactionDemo {
+    public static void main(String[] args) throws SQLException {
         Connection conn = null;// 数据库连接对象
-        Statement stmt = null;// 数据库操作对象
+        PreparedStatement pstmt = null;// 数据库操作对象
         ResultSet rs = null;// 查询结果集对象
         try {
             //1.注册驱动
@@ -22,34 +22,53 @@ public class JDBCDemo {
             String user = "root";
             String password = "123456";
             conn = DriverManager.getConnection(url, user, password);
+            //************设置连接不进行自动提交***********
+            conn.setAutoCommit(false);
             System.out.println(conn);
 
             //3.获取数据库操作对象
-            stmt = conn.createStatement();
-            System.out.println(stmt);
-
+            pstmt = conn.prepareStatement("insert into user(name,sex,email) values (?,?,?)");
+            System.out.println(pstmt);
             //4.执行SQL语句之DML语句
-            String sql = "select * from user";
-            rs = stmt.executeQuery(sql);
-            System.out.println(rs);
+            pstmt.setString(1, "sheliming");
+            pstmt.setString(2, "男");
+            pstmt.setString(3, "sheliming@qq.com");
+            boolean result = pstmt.execute();
+            System.out.println(result);
+
+            int i = 1 / 0;
+
+            //3.获取数据库操作对象
+            pstmt = conn.prepareStatement("insert into user(name,sex,email) values (?,?,?)");
+            System.out.println(pstmt);
+            //4.执行SQL语句之DML语句
+            pstmt.setString(1, "sheliming2");
+            pstmt.setString(2, "男");
+            pstmt.setString(3, "sheliming2@qq.com");
+            boolean result2 = pstmt.execute();
+            System.out.println(result2);
+
+            conn.commit();
 
             /*
 			+----+--------+------+------------------+
 			| id | name   | sex  | email            |
 			+----+--------+------+------------------+
 			 */
-            //5、处理查询结果集
-            while (rs.next()) {
-                int id = rs.getInt("id");
-                String name = rs.getString("name");
-                String sex = rs.getString("sex");
-                String email = rs.getString("email");
-                System.out.println("编号" + id + "\t" + "姓名" + name + "\t" + "性别" + sex + "\t" + "邮箱" + email);
-            }
 
         } catch (SQLException e) {
+            try {
+                conn.rollback();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
+            try {
+                conn.rollback();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
             e.printStackTrace();
         } finally {
             // 6、关闭资源 倒序依次关闭
@@ -62,9 +81,9 @@ public class JDBCDemo {
                 }
             }
             //6.2 当数据库操作对象不为空时，再关闭数据库操作对象
-            if (stmt != null) {
+            if (pstmt != null) {
                 try {
-                    stmt.close();
+                    pstmt.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -78,6 +97,5 @@ public class JDBCDemo {
                 }
             }
         }
-
     }
 }
